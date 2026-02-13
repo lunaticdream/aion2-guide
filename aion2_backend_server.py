@@ -184,15 +184,28 @@ def search_character():
     """캐릭터 검색"""
     try:
         data = request.get_json()
+        
+        print("=== Character Search Request ===")
+        print(f"Request Data: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        
         keyword = data.get('keyword')
         race = data.get('race')  # 1: 천족, 2: 마족
         server_id = data.get('serverId')
         
+        print(f"Keyword: {keyword}")
+        print(f"Race: {race}")
+        print(f"Server ID: {server_id}")
+        
         if not keyword or not race or not server_id:
-            return jsonify({'error': 'keyword, race, serverId required'}), 400
+            error_msg = 'keyword, race, serverId required'
+            print(f"❌ Validation Error: {error_msg}")
+            return jsonify({'success': False, 'error': error_msg}), 400
         
         # 검색 API 호출
+        print(f"Calling search API...")
         result = api_client.search_character(keyword, race, server_id)
+        
+        print(f"Search API Response: {json.dumps(result, indent=2, ensure_ascii=False)}")
         
         return jsonify({
             'success': True,
@@ -200,8 +213,16 @@ def search_character():
         })
         
     except Exception as e:
-        print(f"Error searching character: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        print("=== Search Error ===")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {str(e)}")
+        import traceback
+        print(f"Traceback:\n{traceback.format_exc()}")
+        
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/gameinfo/servers', methods=['GET'])
