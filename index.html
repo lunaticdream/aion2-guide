@@ -18,6 +18,7 @@
         function Aion2PowerGuideApp() {
             const [activeTab, setActiveTab] = useState('search');
             const [servers, setServers] = useState([]);
+            const [allServers, setAllServers] = useState([]); // 전체 서버 목록
             const [selectedRace, setSelectedRace] = useState('1'); // 1: 천족, 2: 마족
             const [selectedServer, setSelectedServer] = useState('');
             const [characterName, setCharacterName] = useState('');
@@ -30,18 +31,72 @@
 
             const API_URL = window.location.origin;
 
+            // 종족별 서버 필터링
+            useEffect(() => {
+                if (allServers.length > 0) {
+                    // 종족에 따라 서버 필터링
+                    const filtered = allServers.filter(server => {
+                        // race 속성이 있으면 필터링, 없으면 모두 표시
+                        if (server.race || server.raceId || server.raceType) {
+                            const serverRace = String(server.race || server.raceId || server.raceType);
+                            return serverRace === selectedRace;
+                        }
+                        return true; // race 정보 없으면 모두 표시
+                    });
+                    
+                    console.log(`Filtered servers for race ${selectedRace}:`, filtered);
+                    
+                    if (filtered.length > 0) {
+                        setServers(filtered);
+                        const firstServerId = String(filtered[0].serverId || filtered[0].id || '1020');
+                        setSelectedServer(firstServerId);
+                    } else {
+                        // 필터링 결과 없으면 전체 표시
+                        setServers(allServers);
+                    }
+                }
+            }, [selectedRace, allServers]);
+
+            // 종족별 서버 필터링
+            useEffect(() => {
+                if (allServers.length > 0) {
+                    // 종족에 따라 서버 필터링
+                    const filtered = allServers.filter(server => {
+                        // race 속성이 있으면 필터링, 없으면 모두 표시
+                        if (server.race || server.raceId || server.raceType) {
+                            const serverRace = String(server.race || server.raceId || server.raceType);
+                            return serverRace === selectedRace;
+                        }
+                        return true; // race 정보 없으면 모두 표시
+                    });
+                    
+                    console.log(`Filtered servers for race ${selectedRace}:`, filtered);
+                    
+                    if (filtered.length > 0) {
+                        setServers(filtered);
+                        const firstServerId = String(filtered[0].serverId || filtered[0].id || '1020');
+                        setSelectedServer(firstServerId);
+                    } else {
+                        // 필터링 결과 없으면 전체 표시
+                        setServers(allServers);
+                    }
+                }
+            }, [selectedRace, allServers]);
+
             // 서버 목록 불러오기
             useEffect(() => {
                 fetchServers();
             }, []);
 
             const fetchServers = async () => {
-                // 하드코딩된 서버 목록 (fallback)
+                // 하드코딩된 서버 목록 (천족/마족 구분)
                 const hardcodedServers = [
-                    { serverId: '1020', name: '이스라펠', id: '1020' },
-                    { serverId: '1021', name: '카스파', id: '1021' },
-                    { serverId: '1022', name: '아트레이아', id: '1022' },
-                    { serverId: '1023', name: '키르시아', id: '1023' }
+                    // 천족 서버
+                    { serverId: '1020', name: '이스라펠 (천족)', id: '1020', race: '1' },
+                    { serverId: '1022', name: '아트레이아 (천족)', id: '1022', race: '1' },
+                    // 마족 서버
+                    { serverId: '1021', name: '카스파 (마족)', id: '1021', race: '2' },
+                    { serverId: '1023', name: '키르시아 (마족)', id: '1023', race: '2' }
                 ];
                 
                 try {
@@ -82,21 +137,17 @@
                     console.log('Parsed Server List:', serverList);
                     
                     if (serverList.length > 0) {
-                        setServers(serverList);
-                        const firstServerId = String(serverList[0].serverId || serverList[0].id || serverList[0].serverID || '1020');
-                        setSelectedServer(firstServerId);
+                        setAllServers(serverList);
                         console.log('✅ Servers loaded from API');
                     } else {
                         console.warn('⚠️ Empty server list, using hardcoded');
-                        setServers(hardcodedServers);
-                        setSelectedServer('1020');
+                        setAllServers(hardcodedServers);
                     }
                     
                 } catch (error) {
                     console.error('❌ Server list error:', error.message);
                     console.log('Using hardcoded server list');
-                    setServers(hardcodedServers);
-                    setSelectedServer('1020');
+                    setAllServers(hardcodedServers);
                 }
             };
 
