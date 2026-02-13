@@ -262,15 +262,29 @@ def fetch_character():
     """캐릭터 정보 가져오기"""
     try:
         data = request.get_json()
+        
+        print("=== Character Fetch Request ===")
+        print(f"Request Data: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        
         character_id = data.get('characterId')
         server_id = data.get('serverId')
         
+        print(f"Character ID: {character_id}")
+        print(f"Server ID: {server_id}")
+        
         if not character_id or not server_id:
-            return jsonify({'error': 'characterId and serverId required'}), 400
+            error_msg = 'characterId and serverId required'
+            print(f"❌ Validation Error: {error_msg}")
+            return jsonify({'success': False, 'error': error_msg}), 400
         
         # API 호출
+        print("Fetching character info...")
         char_info = api_client.get_character_info(character_id, server_id)
+        print(f"✓ Character Info: {json.dumps(char_info, indent=2, ensure_ascii=False)}")
+        
+        print("Fetching character equipment...")
         char_equipment = api_client.get_character_equipment(character_id, server_id)
+        print(f"✓ Character Equipment: {json.dumps(char_equipment, indent=2, ensure_ascii=False)}")
         
         return jsonify({
             'success': True,
@@ -279,8 +293,16 @@ def fetch_character():
         })
         
     except Exception as e:
-        print(f"Error fetching character: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        print("=== Fetch Character Error ===")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {str(e)}")
+        import traceback
+        print(f"Traceback:\n{traceback.format_exc()}")
+        
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/character/analyze', methods=['POST'])
