@@ -39,12 +39,39 @@
                 try {
                     const response = await fetch(`${API_URL}/api/gameinfo/servers`);
                     const data = await response.json();
-                    setServers(data.servers || []);
-                    if (data.servers && data.servers.length > 0) {
-                        setSelectedServer(data.servers[0].id);
+                    
+                    console.log('Server API Response:', data);
+                    
+                    // 응답 구조에 따라 처리
+                    let serverList = [];
+                    
+                    if (Array.isArray(data)) {
+                        serverList = data;
+                    } else if (data.servers) {
+                        serverList = data.servers;
+                    } else if (data.data) {
+                        serverList = data.data;
+                    } else if (data.list) {
+                        serverList = data.list;
+                    }
+                    
+                    console.log('Processed Server List:', serverList);
+                    
+                    setServers(serverList);
+                    if (serverList.length > 0) {
+                        // serverId 또는 id 속성 확인
+                        const firstServerId = serverList[0].serverId || serverList[0].id || serverList[0].serverID;
+                        setSelectedServer(firstServerId);
                     }
                 } catch (error) {
                     console.error('서버 목록 로드 실패:', error);
+                    // 임시 서버 목록 (fallback)
+                    const fallbackServers = [
+                        { id: '1020', name: '서버1', serverId: '1020' },
+                        { id: '1021', name: '서버2', serverId: '1021' }
+                    ];
+                    setServers(fallbackServers);
+                    setSelectedServer('1020');
                 }
             };
 
@@ -239,18 +266,30 @@
 
                                 {/* 서버 선택 */}
                                 <div className="mb-6">
-                                    <label className="block text-gray-300 mb-2 font-medium">서버</label>
-                                    <select
-                                        value={selectedServer}
-                                        onChange={(e) => setSelectedServer(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
-                                    >
-                                        {servers.map((server) => (
-                                            <option key={server.id} value={server.id}>
-                                                {server.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <label className="block text-gray-300 mb-2 font-medium">
+                                        서버 {servers.length > 0 ? `(${servers.length}개)` : ''}
+                                    </label>
+                                    {servers.length > 0 ? (
+                                        <select
+                                            value={selectedServer}
+                                            onChange={(e) => setSelectedServer(e.target.value)}
+                                            className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
+                                        >
+                                            {servers.map((server) => {
+                                                const serverId = server.serverId || server.id || server.serverID;
+                                                const serverName = server.name || server.serverName || `서버 ${serverId}`;
+                                                return (
+                                                    <option key={serverId} value={serverId}>
+                                                        {serverName}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    ) : (
+                                        <div className="px-4 py-3 bg-slate-700 text-gray-400 rounded-lg border border-slate-600">
+                                            서버 목록을 불러오는 중...
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* 캐릭터 이름 */}

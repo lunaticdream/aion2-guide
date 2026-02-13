@@ -208,9 +208,25 @@ def search_character():
 def get_servers():
     """서버 목록"""
     try:
-        result = api_client.get_servers()
-        return jsonify(result)
+        url = "https://aion2.plaync.com/api/gameinfo/servers"
+        params = {'lang': 'ko'}
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://aion2.plaync.com/',
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        print("=== Server List Response ===")
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        
+        return jsonify(data)
     except Exception as e:
+        print(f"Error fetching servers: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
