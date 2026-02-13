@@ -37,7 +37,15 @@
 
             const fetchServers = async () => {
                 try {
-                    const response = await fetch(`${API_URL}/api/gameinfo/servers`);
+                    // 먼저 백엔드 API 시도
+                    let response = await fetch(`${API_URL}/api/gameinfo/servers`);
+                    
+                    if (!response.ok) {
+                        // 백엔드 실패 시 직접 공식 API 호출
+                        console.log('백엔드 API 실패, 직접 호출 시도...');
+                        response = await fetch('https://aion2.plaync.com/api/gameinfo/servers?lang=ko');
+                    }
+                    
                     const data = await response.json();
                     
                     console.log('Server API Response:', data);
@@ -53,22 +61,33 @@
                         serverList = data.data;
                     } else if (data.list) {
                         serverList = data.list;
+                    } else {
+                        // 전체 응답을 배열로 변환 시도
+                        serverList = Object.values(data).filter(item => 
+                            item && typeof item === 'object' && (item.serverId || item.id || item.name)
+                        );
                     }
                     
                     console.log('Processed Server List:', serverList);
                     
-                    setServers(serverList);
-                    if (serverList.length > 0) {
-                        // serverId 또는 id 속성 확인
-                        const firstServerId = serverList[0].serverId || serverList[0].id || serverList[0].serverID;
-                        setSelectedServer(firstServerId);
+                    if (serverList.length === 0) {
+                        throw new Error('서버 목록이 비어있습니다');
                     }
+                    
+                    setServers(serverList);
+                    
+                    // 첫 번째 서버 선택
+                    const firstServerId = serverList[0].serverId || serverList[0].id || serverList[0].serverID || '1020';
+                    setSelectedServer(String(firstServerId));
+                    
                 } catch (error) {
                     console.error('서버 목록 로드 실패:', error);
-                    // 임시 서버 목록 (fallback)
+                    alert('서버 목록을 불러올 수 없습니다. 새로고침 후 다시 시도해주세요.\n\n에러: ' + error.message);
+                    
+                    // 하드코딩된 fallback 서버 목록
                     const fallbackServers = [
-                        { id: '1020', name: '서버1', serverId: '1020' },
-                        { id: '1021', name: '서버2', serverId: '1021' }
+                        { serverId: '1020', name: '이스라펠', id: '1020' },
+                        { serverId: '1021', name: '카스파', id: '1021' }
                     ];
                     setServers(fallbackServers);
                     setSelectedServer('1020');
