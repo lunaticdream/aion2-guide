@@ -91,63 +91,56 @@
             const fetchServers = async () => {
                 // 하드코딩된 서버 목록 (천족/마족 구분)
                 const hardcodedServers = [
-                    // 천족 서버
-                    { serverId: '1020', name: '이스라펠 (천족)', id: '1020', race: '1' },
-                    { serverId: '1022', name: '아트레이아 (천족)', id: '1022', race: '1' },
-                    // 마족 서버
-                    { serverId: '1021', name: '카스파 (마족)', id: '1021', race: '2' },
-                    { serverId: '1023', name: '키르시아 (마족)', id: '1023', race: '2' }
+                    // 천족 서버 (모든 서버)
+                    { serverId: '1020', name: '이스라펠', id: '1020', race: '1' },
+                    { serverId: '1022', name: '아트레이아', id: '1022', race: '1' },
+                    { serverId: '1024', name: '바이젤', id: '1024', race: '1' },
+                    { serverId: '1026', name: '트린샤', id: '1026', race: '1' },
+                    { serverId: '1028', name: '헤르모네', id: '1028', race: '1' },
+                    // 마족 서버 (모든 서버)
+                    { serverId: '1021', name: '카스파', id: '1021', race: '2' },
+                    { serverId: '1023', name: '키르시아', id: '1023', race: '2' },
+                    { serverId: '1025', name: '우르키나', id: '1025', race: '2' },
+                    { serverId: '1027', name: '델포', id: '1027', race: '2' },
+                    { serverId: '1029', name: '세렌디아', id: '1029', race: '2' }
                 ];
                 
+                
                 try {
-                    // 백엔드 API를 통해 서버 목록 가져오기
                     console.log('Fetching servers from backend...');
                     const response = await fetch(`${API_URL}/api/gameinfo/servers`);
                     
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        throw new Error(`HTTP ${response.status}`);
                     }
                     
                     const data = await response.json();
+                    console.log('=== Full API Response ===', data);
                     
-                    console.log('=== Server API Response ===');
-                    console.log(data);
-                    
-                    // 응답 구조 파싱
                     let serverList = [];
                     
                     if (Array.isArray(data)) {
                         serverList = data;
-                    } else if (data.servers && Array.isArray(data.servers)) {
-                        serverList = data.servers;
-                    } else if (data.data && Array.isArray(data.data)) {
-                        serverList = data.data;
-                    } else if (data.list && Array.isArray(data.list)) {
-                        serverList = data.list;
+                    } else if (data.servers) {
+                        serverList = Array.isArray(data.servers) ? data.servers : Object.values(data.servers);
+                    } else if (data.data) {
+                        serverList = Array.isArray(data.data) ? data.data : Object.values(data.data);
                     } else {
-                        // 객체를 배열로 변환
                         const values = Object.values(data);
-                        serverList = values.filter(item => 
-                            item && 
-                            typeof item === 'object' && 
-                            (item.serverId || item.id || item.name || item.serverName)
-                        );
+                        serverList = values.find(v => Array.isArray(v)) || values.filter(v => v && typeof v === 'object' && (v.serverId || v.id));
                     }
                     
-                    console.log('Parsed Server List:', serverList);
+                    console.log(`Loaded ${serverList.length} servers:`, serverList);
                     
                     if (serverList.length > 0) {
                         setAllServers(serverList);
-                        console.log('✅ Servers loaded from API');
                     } else {
-                        console.warn('⚠️ Empty server list, using hardcoded');
                         setAllServers(hardcodedServers);
                     }
-                    
                 } catch (error) {
-                    console.error('❌ Server list error:', error.message);
-                    console.log('Using hardcoded server list');
+                    console.error('Server API Error:', error);
                     setAllServers(hardcodedServers);
+                }
                 }
             };
 

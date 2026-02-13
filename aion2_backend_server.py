@@ -219,15 +219,21 @@ def get_servers():
         response.raise_for_status()
         data = response.json()
         
-        print("=== Server List Response ===")
-        print(json.dumps(data, indent=2, ensure_ascii=False))
+        print("=== Server List API Response ===")
+        print(f"Type: {type(data)}")
+        print(f"Keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}")
+        print(f"Full Response: {json.dumps(data, indent=2, ensure_ascii=False)}")
         
+        # 응답 그대로 반환 (프론트엔드에서 파싱)
         return jsonify(data)
+        
     except Exception as e:
         print(f"Error fetching servers: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        
+        # 에러 시 빈 객체 반환
+        return jsonify({'error': str(e), 'servers': []}), 500
 
 
 @app.route('/api/character/fetch', methods=['POST'])
