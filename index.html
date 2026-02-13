@@ -4,16 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>아이온2 전투력 향상 AI 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-        }
-    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
     <div id="root"></div>
@@ -21,137 +15,136 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // 메인 앱 컴포넌트
         function Aion2PowerGuideApp() {
             const [activeTab, setActiveTab] = useState('search');
+            const [servers, setServers] = useState([]);
+            const [selectedRace, setSelectedRace] = useState('1'); // 1: 천족, 2: 마족
+            const [selectedServer, setSelectedServer] = useState('');
             const [characterName, setCharacterName] = useState('');
-            const [serverName, setServerName] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
+            const [selectedCharacter, setSelectedCharacter] = useState(null);
             const [characterData, setCharacterData] = useState(null);
             const [loading, setLoading] = useState(false);
             const [aiAnalysis, setAiAnalysis] = useState('');
             const [analyzing, setAnalyzing] = useState(false);
-            const [conversationHistory, setConversationHistory] = useState([]);
 
-            // 캐릭터 검색 (시뮬레이션 - 실제로는 크롤링 API 필요)
+            const API_URL = window.location.origin;
+
+            // 서버 목록 불러오기
+            useEffect(() => {
+                fetchServers();
+            }, []);
+
+            const fetchServers = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/api/gameinfo/servers`);
+                    const data = await response.json();
+                    setServers(data.servers || []);
+                    if (data.servers && data.servers.length > 0) {
+                        setSelectedServer(data.servers[0].id);
+                    }
+                } catch (error) {
+                    console.error('서버 목록 로드 실패:', error);
+                }
+            };
+
+            // 캐릭터 검색
             const searchCharacter = async () => {
                 if (!characterName.trim()) {
                     alert('캐릭터 이름을 입력해주세요.');
                     return;
                 }
 
+                if (!selectedServer) {
+                    alert('서버를 선택해주세요.');
+                    return;
+                }
+
                 setLoading(true);
-                
-                // 시뮬레이션 데이터 (실제로는 공식 홈페이지 크롤링 또는 비공식 API 사용)
-                setTimeout(() => {
-                    const mockData = {
-                        name: characterName,
-                        server: serverName || '서버1',
-                        level: 70,
-                        class: '검투사',
-                        combatPower: 12450,
-                        equipment: {
-                            weapon: { name: '진룡왕의 대검', level: 15, grade: '전설' },
-                            armor: { name: '백룡왕의 흉갑', level: 12, grade: '전설' },
-                            accessories: [
-                                { slot: '목걸이', name: '건룡왕의 목걸이', level: 10 },
-                                { slot: '귀걸이', name: '흑룡왕의 귀걸이', level: 8 }
-                            ]
-                        },
-                        stats: {
-                            attack: 3420,
-                            defense: 2180,
-                            hp: 45600,
-                            criticalRate: 42.5,
-                            criticalDamage: 178.3,
-                            accuracy: 215,
-                            evasion: 168
-                        },
-                        skills: {
-                            stigma: ['강타', '회오리베기', '광폭화', '방패막기'],
-                            completionRate: 75
-                        },
-                        petCollection: {
-                            wild: 68,
-                            intelligence: 52,
-                            nature: 45,
-                            transformation: 38
-                        },
-                        soulEngraving: {
-                            weapon: ['치명타 피해 +15%', '공격력 +120'],
-                            armor: ['방어력 +8%', '체력 +2500']
-                        }
-                    };
+                setSearchResults([]);
+
+                try {
+                    const response = await fetch(`${API_URL}/api/character/search`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            keyword: characterName,
+                            race: selectedRace,
+                            serverId: selectedServer
+                        })
+                    });
+
+                    const result = await response.json();
                     
-                    setCharacterData(mockData);
+                    if (result.success && result.data && result.data.characters) {
+                        setSearchResults(result.data.characters);
+                        if (result.data.characters.length === 0) {
+                            alert('검색 결과가 없습니다.');
+                        }
+                    } else {
+                        alert('검색 실패: ' + (result.error || '알 수 없는 오류'));
+                    }
+                } catch (error) {
+                    console.error('검색 오류:', error);
+                    alert('검색 중 오류가 발생했습니다.');
+                } finally {
                     setLoading(false);
-                    setActiveTab('analysis');
-                }, 1500);
+                }
             };
 
-            // API 베이스 URL 설정
-            const getApiUrl = () => {
-                // 현재 페이지의 origin 사용 (Railway 배포 시 자동으로 맞춰짐)
-                return window.location.origin;
+            // 캐릭터 선택 및 상세 정보 가져오기
+            const selectCharacter = async (character) => {
+                setSelectedCharacter(character);
+                setLoading(true);
+
+                try {
+                    const response = await fetch(`${API_URL}/api/character/fetch`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            characterId: character.characterId,
+                            serverId: selectedServer
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // 데이터 가공
+                        const processedData = {
+                            name: result.info.characterName,
+                            level: result.info.level,
+                            class: result.info.className,
+                            combatPower: result.info.combatPoint,
+                            equipment: result.equipment || {},
+                            stats: result.info.stats || {},
+                            info: result.info,
+                            rawEquipment: result.equipment
+                        };
+                        
+                        setCharacterData(processedData);
+                        setActiveTab('analysis');
+                    } else {
+                        alert('캐릭터 정보를 가져오는데 실패했습니다.');
+                    }
+                } catch (error) {
+                    console.error('캐릭터 정보 로드 오류:', error);
+                    alert('캐릭터 정보를 가져오는데 실패했습니다.');
+                } finally {
+                    setLoading(false);
+                }
             };
 
-            // AI 분석 요청
+            // AI 분석
             const analyzeCharacter = async () => {
                 if (!characterData) return;
 
                 setAnalyzing(true);
-                
-                const prompt = `아이온2 게임 캐릭터 전투력 향상 분석을 해주세요.
-
-캐릭터 정보:
-- 이름: ${characterData.name}
-- 직업: ${characterData.class}
-- 레벨: ${characterData.level}
-- 전투력: ${characterData.combatPower}
-
-장비:
-- 무기: ${characterData.equipment.weapon.name} (+${characterData.equipment.weapon.level})
-- 갑옷: ${characterData.equipment.armor.name} (+${characterData.equipment.armor.level})
-- 악세서리: ${characterData.equipment.accessories.map(a => `${a.slot}: ${a.name} (+${a.level})`).join(', ')}
-
-스탯:
-- 공격력: ${characterData.stats.attack}
-- 방어력: ${characterData.stats.defense}
-- 체력: ${characterData.stats.hp}
-- 치명타 확률: ${characterData.stats.criticalRate}%
-- 치명타 피해: ${characterData.stats.criticalDamage}%
-- 명중: ${characterData.stats.accuracy}
-- 회피: ${characterData.stats.evasion}
-
-스티그마 완성도: ${characterData.skills.completionRate}%
-스티그마 스킬: ${characterData.skills.stigma.join(', ')}
-
-펫 컬렉션:
-- 야성: ${characterData.petCollection.wild}%
-- 지성: ${characterData.petCollection.intelligence}%
-- 자연: ${characterData.petCollection.nature}%
-- 변형: ${characterData.petCollection.transformation}%
-
-영혼 각인:
-- 무기: ${characterData.soulEngraving.weapon.join(', ')}
-- 방어구: ${characterData.soulEngraving.armor.join(', ')}
-
-다음 항목들을 분석해주세요:
-1. 현재 캐릭터의 강점과 약점
-2. 전투력을 효율적으로 올리기 위한 우선순위 (1~5순위)
-3. 각 우선순위별 구체적인 실행 방법
-4. 예상 전투력 증가량
-5. 필요한 재화/시간 예상
-
-분석은 명확하고 실용적으로 작성해주세요.`;
 
                 try {
-                    // 백엔드 API 호출로 변경
-                    const apiUrl = getApiUrl();
-                    const response = await fetch(`${apiUrl}/api/character/analyze`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
+                    const response = await fetch(`${API_URL}/api/character/analyze`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(characterData)
                     });
 
@@ -159,81 +152,35 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
-                    const data = await response.json();
-                    const analysisText = data.analysis;
+                    const result = await response.json();
                     
-                    setAiAnalysis(analysisText);
-                    setConversationHistory([
-                        ...conversationHistory,
-                        { role: "user", content: prompt },
-                        { role: "assistant", content: analysisText }
-                    ]);
+                    if (result.success) {
+                        setAiAnalysis(result.analysis);
+                    } else {
+                        setAiAnalysis('AI 분석 실패: ' + result.error);
+                    }
                 } catch (error) {
                     console.error('AI 분석 오류:', error);
-                    setAiAnalysis('AI 분석 중 오류가 발생했습니다. 백엔드 서버를 확인해주세요.\n\n오류: ' + error.message);
+                    setAiAnalysis('AI 분석 중 오류가 발생했습니다: ' + error.message);
+                } finally {
+                    setAnalyzing(false);
                 }
-                
-                setAnalyzing(false);
-            };
-
-            // 추가 질문
-            const [userQuestion, setUserQuestion] = useState('');
-            const askFollowUp = async () => {
-                if (!userQuestion.trim()) return;
-
-                setAnalyzing(true);
-                
-                try {
-                    const apiUrl = getApiUrl();
-                    const response = await fetch(`${apiUrl}/api/character/question`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            characterData: characterData,
-                            question: userQuestion,
-                            conversationHistory: conversationHistory
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const answerText = data.answer;
-                    
-                    setConversationHistory([
-                        ...conversationHistory,
-                        { role: "user", content: userQuestion },
-                        { role: "assistant", content: answerText }
-                    ]);
-                    
-                    setAiAnalysis(prev => prev + "\n\n---\n\n**질문:** " + userQuestion + "\n\n**답변:**\n" + answerText);
-                    setUserQuestion('');
-                } catch (error) {
-                    console.error('추가 질문 오류:', error);
-                    setAiAnalysis(prev => prev + "\n\n오류: " + error.message);
-                }
-                
-                setAnalyzing(false);
             };
 
             return (
                 <div className="min-h-screen p-4 md:p-8">
-                    {/* 헤더 */}
-                    <div className="max-w-6xl mx-auto mb-8">
+                    <div className="max-w-6xl mx-auto">
+                        {/* 헤더 */}
                         <div className="text-center mb-8">
                             <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
                                 아이온2 전투력 향상 AI 가이드
                             </h1>
                             <p className="text-gray-300 text-lg">
-                                AI가 분석하는 맞춤형 전투력 향상 전략
+                                실제 캐릭터 정보로 AI가 분석하는 맞춤형 전투력 향상 전략
                             </p>
                         </div>
 
-                        {/* 탭 네비게이션 */}
+                        {/* 탭 */}
                         <div className="flex gap-2 mb-6 bg-slate-800/50 p-2 rounded-lg backdrop-blur">
                             <button
                                 onClick={() => setActiveTab('search')}
@@ -256,86 +203,104 @@
                             >
                                 AI 분석
                             </button>
-                            <button
-                                onClick={() => setActiveTab('guide')}
-                                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all ${
-                                    activeTab === 'guide'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-300 hover:bg-slate-700'
-                                }`}
-                            >
-                                가이드
-                            </button>
                         </div>
 
                         {/* 캐릭터 검색 탭 */}
                         {activeTab === 'search' && (
                             <div className="bg-slate-800/70 backdrop-blur rounded-2xl p-8 shadow-2xl border border-slate-700">
-                                <h2 className="text-2xl font-bold text-white mb-6">캐릭터 정보 조회</h2>
+                                <h2 className="text-2xl font-bold text-white mb-6">캐릭터 검색</h2>
                                 
-                                <div className="space-y-4 mb-6">
-                                    <div>
-                                        <label className="block text-gray-300 mb-2 font-medium">서버</label>
-                                        <input
-                                            type="text"
-                                            value={serverName}
-                                            onChange={(e) => setServerName(e.target.value)}
-                                            placeholder="서버 이름 (선택사항)"
-                                            className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                        />
+                                {/* 종족 선택 */}
+                                <div className="mb-6">
+                                    <label className="block text-gray-300 mb-3 font-medium">종족</label>
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={() => setSelectedRace('1')}
+                                            className={`flex-1 py-4 px-6 rounded-lg font-bold transition-all ${
+                                                selectedRace === '1'
+                                                    ? 'bg-blue-600 text-white shadow-lg scale-105'
+                                                    : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                                            }`}
+                                        >
+                                            ⚡ 천족 (Light)
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedRace('2')}
+                                            className={`flex-1 py-4 px-6 rounded-lg font-bold transition-all ${
+                                                selectedRace === '2'
+                                                    ? 'bg-red-600 text-white shadow-lg scale-105'
+                                                    : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                                            }`}
+                                        >
+                                            🔥 마족 (Dark)
+                                        </button>
                                     </div>
-                                    
-                                    <div>
-                                        <label className="block text-gray-300 mb-2 font-medium">캐릭터 이름</label>
-                                        <input
-                                            type="text"
-                                            value={characterName}
-                                            onChange={(e) => setCharacterName(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && searchCharacter()}
-                                            placeholder="캐릭터 이름을 입력하세요"
-                                            className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                        />
-                                    </div>
+                                </div>
+
+                                {/* 서버 선택 */}
+                                <div className="mb-6">
+                                    <label className="block text-gray-300 mb-2 font-medium">서버</label>
+                                    <select
+                                        value={selectedServer}
+                                        onChange={(e) => setSelectedServer(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
+                                    >
+                                        {servers.map((server) => (
+                                            <option key={server.id} value={server.id}>
+                                                {server.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* 캐릭터 이름 */}
+                                <div className="mb-6">
+                                    <label className="block text-gray-300 mb-2 font-medium">캐릭터 이름</label>
+                                    <input
+                                        type="text"
+                                        value={characterName}
+                                        onChange={(e) => setCharacterName(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && searchCharacter()}
+                                        placeholder="캐릭터 이름 입력"
+                                        className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
+                                    />
                                 </div>
 
                                 <button
                                     onClick={searchCharacter}
                                     disabled={loading}
-                                    className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                    className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50"
                                 >
                                     {loading ? '검색 중...' : '캐릭터 검색'}
                                 </button>
 
-                                {characterData && (
-                                    <div className="mt-8 p-6 bg-slate-700/50 rounded-xl border border-slate-600">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div>
-                                                <h3 className="text-2xl font-bold text-white">{characterData.name}</h3>
-                                                <p className="text-gray-400">{characterData.server} • Lv.{characterData.level} {characterData.class}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm text-gray-400">전투력</p>
-                                                <p className="text-3xl font-bold text-purple-400">{characterData.combatPower.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                                            <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                                                <p className="text-xs text-gray-400 mb-1">공격력</p>
-                                                <p className="text-lg font-bold text-white">{characterData.stats.attack}</p>
-                                            </div>
-                                            <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                                                <p className="text-xs text-gray-400 mb-1">방어력</p>
-                                                <p className="text-lg font-bold text-white">{characterData.stats.defense}</p>
-                                            </div>
-                                            <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                                                <p className="text-xs text-gray-400 mb-1">치명타율</p>
-                                                <p className="text-lg font-bold text-white">{characterData.stats.criticalRate}%</p>
-                                            </div>
-                                            <div className="text-center p-3 bg-slate-800/50 rounded-lg">
-                                                <p className="text-xs text-gray-400 mb-1">체력</p>
-                                                <p className="text-lg font-bold text-white">{characterData.stats.hp.toLocaleString()}</p>
-                                            </div>
+                                {/* 검색 결과 */}
+                                {searchResults.length > 0 && (
+                                    <div className="mt-8">
+                                        <h3 className="text-xl font-bold text-white mb-4">검색 결과</h3>
+                                        <div className="space-y-3">
+                                            {searchResults.map((char, index) => (
+                                                <div
+                                                    key={index}
+                                                    onClick={() => selectCharacter(char)}
+                                                    className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-purple-500 hover:bg-slate-700 cursor-pointer transition-all"
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <div className="text-lg font-bold text-white">{char.characterName}</div>
+                                                            <div className="text-sm text-gray-400">
+                                                                Lv.{char.level} {char.className}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-sm text-gray-400">전투력</div>
+                                                            <div className="text-xl font-bold text-purple-400">
+                                                                {char.combatPoint?.toLocaleString() || '-'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -347,6 +312,22 @@
                             <div className="bg-slate-800/70 backdrop-blur rounded-2xl p-8 shadow-2xl border border-slate-700">
                                 <h2 className="text-2xl font-bold text-white mb-6">AI 전투력 분석</h2>
                                 
+                                {/* 캐릭터 정보 요약 */}
+                                <div className="mb-8 p-6 bg-slate-700/50 rounded-xl border border-slate-600">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white">{characterData.name}</h3>
+                                            <p className="text-gray-400">Lv.{characterData.level} {characterData.class}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-gray-400">전투력</p>
+                                            <p className="text-3xl font-bold text-purple-400">
+                                                {characterData.combatPower?.toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {!aiAnalysis && (
                                     <div className="text-center py-12">
                                         <div className="mb-6">
@@ -354,7 +335,7 @@
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                             </svg>
                                         </div>
-                                        <p className="text-gray-300 mb-6">AI가 캐릭터를 분석하여 전투력 향상 전략을 제시합니다</p>
+                                        <p className="text-gray-300 mb-6">AI가 실제 캐릭터 정보를 분석하여<br/>전투력 향상 전략을 제시합니다</p>
                                         <button
                                             onClick={analyzeCharacter}
                                             disabled={analyzing}
@@ -375,32 +356,10 @@
                                             </div>
                                         </div>
 
-                                        {/* 추가 질문 */}
-                                        <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600">
-                                            <h3 className="text-lg font-bold text-white mb-4">추가 질문하기</h3>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={userQuestion}
-                                                    onChange={(e) => setUserQuestion(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && askFollowUp()}
-                                                    placeholder="예: 펫 컬렉션을 빠르게 올리는 방법은?"
-                                                    className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                                                />
-                                                <button
-                                                    onClick={askFollowUp}
-                                                    disabled={analyzing || !userQuestion.trim()}
-                                                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    질문
-                                                </button>
-                                            </div>
-                                        </div>
-
                                         <button
                                             onClick={analyzeCharacter}
                                             disabled={analyzing}
-                                            className="w-full mt-4 py-3 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-600 transition-all disabled:opacity-50"
+                                            className="w-full py-3 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-600 transition-all disabled:opacity-50"
                                         >
                                             재분석
                                         </button>
@@ -408,92 +367,7 @@
                                 )}
                             </div>
                         )}
-
-                        {/* 가이드 탭 */}
-                        {activeTab === 'guide' && (
-                            <div className="bg-slate-800/70 backdrop-blur rounded-2xl p-8 shadow-2xl border border-slate-700">
-                                <h2 className="text-2xl font-bold text-white mb-6">전투력 향상 가이드</h2>
-                                
-                                <div className="space-y-6">
-                                    <GuideSection
-                                        title="1. 장비 강화"
-                                        items={[
-                                            '무기를 최우선으로 강화 (+20 목표)',
-                                            '방어구는 생존에 필수적인 부위부터 강화',
-                                            '악세서리는 세트 효과를 고려하여 강화',
-                                            '전설 등급 이상 장비 목표'
-                                        ]}
-                                    />
-                                    
-                                    <GuideSection
-                                        title="2. 영혼 각인"
-                                        items={[
-                                            '직업에 맞는 각인 옵션 선택',
-                                            '치명타 피해, 공격력 우선 확보',
-                                            '각인 레벨을 단계적으로 상승',
-                                            '불필요한 옵션은 재작업'
-                                        ]}
-                                    />
-                                    
-                                    <GuideSection
-                                        title="3. 펫 컬렉션"
-                                        items={[
-                                            '야성 펫 컬렉션 우선 (공격력 증가)',
-                                            '매일 펫 사냥 일일 퀘스트 진행',
-                                            '펫 합성으로 등급 상승',
-                                            '컬렉션 보상 잊지 말고 수령'
-                                        ]}
-                                    />
-                                    
-                                    <GuideSection
-                                        title="4. 스티그마"
-                                        items={[
-                                            '주요 딜링 스킬 우선 각인',
-                                            '스티그마 파편 수집',
-                                            '직업별 필수 스티그마 확인',
-                                            '스킬 레벨업으로 효율 증대'
-                                        ]}
-                                    />
-                                    
-                                    <GuideSection
-                                        title="5. 일일 콘텐츠"
-                                        items={[
-                                            '일일 던전: 장비 및 재화 획득',
-                                            '어비스: PvP 포인트로 장비 교환',
-                                            '레기온 활동: 협동 콘텐츠 보상',
-                                            '이벤트 적극 참여'
-                                        ]}
-                                    />
-                                </div>
-
-                                <div className="mt-8 p-6 bg-purple-900/30 rounded-xl border border-purple-700/50">
-                                    <h3 className="text-xl font-bold text-purple-300 mb-3">💡 Tip</h3>
-                                    <p className="text-gray-300 leading-relaxed">
-                                        효율적인 전투력 상승을 위해서는 한 번에 모든 것을 하려 하지 말고, 
-                                        위 순서대로 단계별로 진행하는 것이 좋습니다. 
-                                        특히 무기 강화는 전투력 상승 효율이 가장 높으니 최우선으로 진행하세요!
-                                    </p>
-                                </div>
-                            </div>
-                        )}
                     </div>
-                </div>
-            );
-        }
-
-        // 가이드 섹션 컴포넌트
-        function GuideSection({ title, items }) {
-            return (
-                <div className="bg-slate-700/50 rounded-xl p-6 border border-slate-600">
-                    <h3 className="text-xl font-bold text-white mb-4">{title}</h3>
-                    <ul className="space-y-2">
-                        {items.map((item, index) => (
-                            <li key={index} className="flex items-start gap-3 text-gray-300">
-                                <span className="text-purple-400 mt-1">▸</span>
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ul>
                 </div>
             );
         }
