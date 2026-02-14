@@ -127,23 +127,87 @@ class Aion2PowerAnalyzer:
         combat_power = character_data.get('combatPower', 0)
         equipment = character_data.get('equipment', {})
         stats = character_data.get('stats', {})
+        info = character_data.get('info', {})
         
-        prompt = f"""아이온2 캐릭터 전투력 향상 분석:
+        prompt = f"""당신은 아이온2 전문 게임 코치입니다. 캐릭터의 '아툴 점수'를 최대한 올리는 것이 목표입니다.
 
-캐릭터: {name} (Lv.{level} {class_name})
-전투력: {combat_power:,}
+# 캐릭터 정보
+- 이름: {name}
+- 직업: {class_name}
+- 레벨: {level}
+- 전투력: {combat_power:,}
 
-장비: {json.dumps(equipment, ensure_ascii=False)}
-스탯: {json.dumps(stats, ensure_ascii=False)}
+# 상세 정보
+장비: {json.dumps(equipment, ensure_ascii=False, indent=2)}
+스탯: {json.dumps(stats, ensure_ascii=False, indent=2)}
 
-분석 내용:
-1. 현재 상태 평가 (강점/약점)
-2. 전투력 향상 우선순위 (1-5순위)
-3. 각 우선순위별 구체적 방법
-4. 예상 전투력 증가량
-5. 필요 재화/시간
+# 아툴 점수 시스템 이해
+아툴 점수는 다음 요소들로 구성됩니다:
+1. **전투력** (가장 중요) - 장비 강화, 스킬, 스탯 강화
+2. **장비 점수** - 등급(전설/영웅/희귀), 강화 수치, 세트 효과
+3. **스킬 완성도** - 스티그마 스킬 습득률, 스킬 레벨
+4. **수집품** - 펫 수집, 펫 지능도, 변신체
+5. **영혼각인** - 무기/방어구 각인 개수 및 효과
+6. **특성 강화** - 캐릭터 고유 특성 강화 레벨
 
-간결하고 실용적으로 작성."""
+# 분석 요청
+다음 형식으로 **구체적이고 실행 가능한** 제안을 해주세요:
+
+## 1. 현재 아툴 점수 예상 및 평가
+- 추정 아툴 점수 범위
+- 동일 레벨/직업 대비 위치 (상위 몇%)
+- 주요 강점 3가지
+- 개선이 시급한 약점 3가지
+
+## 2. 아툴 점수 향상 우선순위 (TOP 5)
+
+### 1순위: [항목명]
+- **현재 상태**: 구체적 수치
+- **목표 상태**: 달성 목표
+- **실행 방법**: 단계별 가이드
+- **예상 아툴 점수 증가**: +XX점
+- **필요 재화**: 키나/아이템
+- **소요 시간**: 일일 플레이 기준
+
+### 2순위: [항목명]
+(위와 동일한 형식)
+
+### 3순위: [항목명]
+(위와 동일한 형식)
+
+### 4순위: [항목명]
+(위와 동일한 형식)
+
+### 5순위: [항목명]
+(위와 동일한 형식)
+
+## 3. 단계별 로드맵
+
+### 단기 (1주일)
+- 일일 필수 콘텐츠
+- 집중 육성 항목
+- 예상 아툴 점수: 현재 → +XX점
+
+### 중기 (1개월)
+- 주간 목표
+- 장비/스킬 강화 계획
+- 예상 아툴 점수: +XX점 → +YY점
+
+### 장기 (3개월)
+- 최종 목표 스펙
+- 완성형 캐릭터 방향
+- 예상 최종 아툴 점수: +ZZ점
+
+## 4. 효율성 팁
+- 가성비 좋은 강화 루트
+- 피해야 할 함정
+- 무과금/소과금 추천 방향
+
+**중요**: 
+- 모든 제안은 구체적인 수치와 방법 포함
+- 아툴 점수 증가량을 명확히 표시
+- 실제 게임 내에서 바로 실행 가능한 내용만 작성
+- 우선순위는 투자 대비 아툴 점수 상승 효율 기준으로 정렬"""
 
         return prompt
     
@@ -155,7 +219,7 @@ class Aion2PowerAnalyzer:
             client = get_anthropic_client()
             message = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=4000,
+                max_tokens=8000,  # 더 상세한 분석을 위해 증가
                 messages=[{"role": "user", "content": prompt}]
             )
             return message.content[0].text
