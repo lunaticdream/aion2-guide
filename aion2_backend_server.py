@@ -51,36 +51,33 @@ class Aion2APIClient:
     
     def get_character_info(self, character_id, server_id):
         """캐릭터 기본 정보"""
-        # URL을 수동으로 구성하여 이중 인코딩 방지
-        from urllib.parse import quote
-        
-        # = 기호는 인코딩하지 않음 (safe='=')
-        encoded_char_id = quote(character_id, safe='=')
-        
-        url = f"{self.BASE_URL}/character/info?lang=ko&characterId={encoded_char_id}&serverId={server_id}"
+        # URL을 직접 구성 (인코딩하지 않음)
+        url = f"{self.BASE_URL}/character/info?lang=ko&characterId={character_id}&serverId={server_id}"
         
         print(f"=== Character Info API Request ===")
-        print(f"Original Character ID: {character_id}")
-        print(f"Encoded Character ID: {encoded_char_id}")
+        print(f"Character ID (raw): {character_id}")
+        print(f"Server ID: {server_id}")
         print(f"Full URL: {url}")
         
         response = self.session.get(url, timeout=10)
+        
+        print(f"Response Status: {response.status_code}")
+        print(f"Response URL (actual): {response.url}")
+        
         response.raise_for_status()
         return response.json()
     
     def get_character_equipment(self, character_id, server_id):
         """캐릭터 장비 정보"""
-        from urllib.parse import quote
-        
-        # = 기호는 인코딩하지 않음 (safe='=')
-        encoded_char_id = quote(character_id, safe='=')
-        
-        url = f"{self.BASE_URL}/character/equipment?lang=ko&characterId={encoded_char_id}&serverId={server_id}"
+        # URL을 직접 구성 (인코딩하지 않음)
+        url = f"{self.BASE_URL}/character/equipment?lang=ko&characterId={character_id}&serverId={server_id}"
         
         print(f"=== Character Equipment API Request ===")
         print(f"Full URL: {url}")
         
         response = self.session.get(url, timeout=10)
+        print(f"Response Status: {response.status_code}")
+        
         response.raise_for_status()
         return response.json()
     
