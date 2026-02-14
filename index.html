@@ -229,6 +229,18 @@
                 setLoading(true);
 
                 try {
+                    console.log('=== Select Character ===');
+                    console.log('Character:', character);
+                    console.log('Character ID:', character.characterId);
+                    console.log('Server ID:', selectedServer);
+                    
+                    const requestBody = {
+                        characterId: character.characterId,
+                        serverId: selectedServer
+                    };
+                    
+                    console.log('Fetch Request Body:', JSON.stringify(requestBody, null, 2));
+                    
                     const response = await fetch(`${API_URL}/api/character/fetch`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -238,7 +250,15 @@
                         })
                     });
 
+                    console.log('Fetch Response Status:', response.status);
+                    console.log('Fetch Response OK:', response.ok);
+                    
                     const result = await response.json();
+                    console.log('Fetch Response Data:', result);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${result.error || JSON.stringify(result)}`);
+                    }
                     
                     if (result.success) {
                         // 데이터 가공
@@ -259,8 +279,11 @@
                         alert('캐릭터 정보를 가져오는데 실패했습니다.');
                     }
                 } catch (error) {
-                    console.error('캐릭터 정보 로드 오류:', error);
-                    alert('캐릭터 정보를 가져오는데 실패했습니다.');
+                    console.error('=== Character Load Error ===');
+                    console.error('Error Type:', error.name);
+                    console.error('Error Message:', error.message);
+                    console.error('Error Stack:', error.stack);
+                    alert('캐릭터 정보를 가져오는데 실패했습니다.\n\n' + error.message + '\n\nF12 → Console 확인');
                 } finally {
                     setLoading(false);
                 }
