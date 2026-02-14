@@ -485,7 +485,7 @@
                                 
                                 {/* 캐릭터 정보 요약 */}
                                 <div className="mb-8 p-6 bg-slate-700/50 rounded-xl border border-slate-600">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center mb-6">
                                         <div>
                                             <h3 className="text-2xl font-bold text-white">{characterData.name}</h3>
                                             <p className="text-gray-400">Lv.{characterData.level} {characterData.class}</p>
@@ -497,6 +497,55 @@
                                             </p>
                                         </div>
                                     </div>
+                                    
+                                    {/* 상세 정보 토글 */}
+                                    <details className="mt-4">
+                                        <summary className="cursor-pointer text-purple-400 hover:text-purple-300 font-medium mb-4">
+                                            📊 상세 정보 보기 (API 응답 데이터)
+                                        </summary>
+                                        
+                                        <div className="space-y-4 mt-4">
+                                            {/* 기본 정보 */}
+                                            <div className="bg-slate-800/50 rounded-lg p-4">
+                                                <h4 className="text-lg font-bold text-white mb-3">🎮 기본 정보 (info)</h4>
+                                                <pre className="text-xs text-gray-300 overflow-auto max-h-60 bg-slate-900/50 p-3 rounded">
+                                                    {JSON.stringify(characterData.info, null, 2)}
+                                                </pre>
+                                            </div>
+                                            
+                                            {/* 장비 정보 */}
+                                            <div className="bg-slate-800/50 rounded-lg p-4">
+                                                <h4 className="text-lg font-bold text-white mb-3">⚔️ 장비 정보 (equipment)</h4>
+                                                <pre className="text-xs text-gray-300 overflow-auto max-h-60 bg-slate-900/50 p-3 rounded">
+                                                    {JSON.stringify(characterData.equipment, null, 2)}
+                                                </pre>
+                                            </div>
+                                            
+                                            {/* 스탯 정보 */}
+                                            <div className="bg-slate-800/50 rounded-lg p-4">
+                                                <h4 className="text-lg font-bold text-white mb-3">📈 스탯 정보 (stats)</h4>
+                                                <pre className="text-xs text-gray-300 overflow-auto max-h-60 bg-slate-900/50 p-3 rounded">
+                                                    {JSON.stringify(characterData.stats, null, 2)}
+                                                </pre>
+                                            </div>
+                                            
+                                            {/* 원본 장비 데이터 */}
+                                            <div className="bg-slate-800/50 rounded-lg p-4">
+                                                <h4 className="text-lg font-bold text-white mb-3">🔧 원본 장비 데이터 (rawEquipment)</h4>
+                                                <pre className="text-xs text-gray-300 overflow-auto max-h-60 bg-slate-900/50 p-3 rounded">
+                                                    {JSON.stringify(characterData.rawEquipment, null, 2)}
+                                                </pre>
+                                            </div>
+                                            
+                                            {/* 전체 데이터 */}
+                                            <div className="bg-slate-800/50 rounded-lg p-4">
+                                                <h4 className="text-lg font-bold text-white mb-3">💾 전체 캐릭터 데이터</h4>
+                                                <pre className="text-xs text-gray-300 overflow-auto max-h-60 bg-slate-900/50 p-3 rounded">
+                                                    {JSON.stringify(characterData, null, 2)}
+                                                </pre>
+                                            </div>
+                                        </div>
+                                    </details>
                                 </div>
 
                                 {!aiAnalysis && (
