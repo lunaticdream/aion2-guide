@@ -231,11 +231,16 @@
                 try {
                     console.log('=== Select Character ===');
                     console.log('Character:', character);
-                    console.log('Character ID:', character.characterId);
+                    
+                    // Character ID 디코딩 (이중 인코딩 방지)
+                    const decodedCharacterId = decodeURIComponent(character.characterId);
+                    
+                    console.log('Original Character ID:', character.characterId);
+                    console.log('Decoded Character ID:', decodedCharacterId);
                     console.log('Server ID:', selectedServer);
                     
                     const requestBody = {
-                        characterId: character.characterId,
+                        characterId: decodedCharacterId,
                         serverId: selectedServer
                     };
                     
